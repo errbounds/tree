@@ -4,23 +4,154 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./style.css" />
     <title>Document</title>
-    <style>
-      * {
-        /* box-sizing: ; */
-        margin: 0;
-        padding: 0;
-      }
-      body {
-        overflow: hidden;
-      }
-      /* #canvas {
-        border: 1px solid black;
-      } */
-    </style>
   </head>
   <body>
-    <canvas id="canvas"></canvas>
+    <div class="btn-box">
+      <div class="day show">
+        <span class="material-icons"> light_mode </span>
+      </div>
+    </div>
+    <!-- <script src="./app.js" type="module"></script> -->
+    <script>
+      class App {
+        constructor() {
+          this.canvas = document.createElement("canvas");
+          document.body.appendChild(this.canvas);
+          this.ctx = this.canvas.getContext("2d");
+
+          window.addEventListener("resize", this.resize.bind(this));
+          window.addEventListener("click", this.click.bind(this));
+          this.resize();
+        }
+
+        resize() {
+          this.canvas.height = window.innerHeight;
+          this.canvas.width = window.innerWidth;
+          this.ctx.clearRect(0, 0, this.canvas.height, this.canvas.width);
+        }
+
+        click(event) {
+          const { clientX } = event;
+          new Tree(this.ctx, clientX, this.canvas.height);
+        }
+      }
+
+      class Tree {
+        constructor(ctx, posX, posY) {
+          this.ctx = ctx;
+          this.posX = posX;
+          this.posY = posY;
+          this.branches = [];
+          this.depth = 11;
+
+          // animation
+          this.currentDepth = 0;
+          this.animation = null;
+
+          this.init();
+        }
+
+        init() {
+          // dpeth nested branches
+          for (let i = 0; i < this.depth; i++) {
+            this.branches.push([]);
+          }
+
+          this.createBranch(this.posX, this.posY, 90, 0);
+          this.draw();
+        }
+
+        createBranch(startX, startY, angle, depth) {
+          if (depth === this.depth) return;
+
+          const len = depth ? this.random(0, 13) : this.random(10, 13);
+          const endX = startX + this.cos(angle) * len * (this.depth - depth);
+          const endY = startY - this.sin(angle) * len * (this.depth - depth);
+
+          this.branches[depth].push(
+            new Branch(startX, startY, endX, endY, this.depth - depth)
+          );
+
+          this.createBranch(endX, endY, angle - this.random(15, 30), depth + 1);
+          this.createBranch(endX, endY, angle + this.random(15, 30), depth + 1);
+        }
+
+        draw() {
+          if (this.currentDepth === this.depth)
+            cancelAnimationFrame(this.animation);
+
+          for (let i = 0; i < this.branches.length; i++) {
+            let pass = true;
+            for (let j = 0; j < this.branches[i].length; j++) {
+              pass = this.branches[i][j].draw(this.ctx);
+            }
+            if (!pass) break;
+          }
+
+          this.animation = requestAnimationFrame(this.draw.bind(this));
+        }
+        cos(deg) {
+          return Math.cos((deg / 180) * Math.PI);
+        }
+        sin(deg) {
+          return Math.sin((deg / 180) * Math.PI);
+        }
+        random(a, b) {
+          return a + Math.random() * (b - a);
+        }
+      }
+
+      class Branch {
+        constructor(startX, startY, endX, endY, lineWidth) {
+          this.startX = startX;
+          this.startY = startY;
+          this.endX = endX;
+          this.endY = endY;
+          this.color = "#000";
+          this.lineWidth = lineWidth;
+
+          // animation
+          this.frame = 10;
+          this.currentFrame = 0;
+
+          // section length
+          this.gapX = (this.endX - this.startX) / this.frame;
+          this.gapY = (this.endY - this.startY) / this.frame;
+
+          this.currentX = this.startX;
+          this.currentY = this.startY;
+        }
+        draw(ctx) {
+          if (this.currentFrame === this.frame) return true;
+          ctx.beginPath();
+
+          this.currentX += this.gapX;
+          this.currentY += this.gapY;
+
+          ctx.moveTo(this.startX, this.startY);
+          ctx.lineTo(this.currentX, this.currentY);
+
+          ctx.lineWidth = this.lineWidth;
+          ctx.fillStyle = this.color;
+          ctx.storkeStyle = this.color;
+
+          ctx.stroke();
+          ctx.closePath();
+
+          this.currentFrame++;
+
+          return false;
+        }
+      }
+      window.onload = () => {
+        new App();
+      };
+    </script>
   </body>
-  <script src="./tree.js"></script>
 </html>
